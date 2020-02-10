@@ -1,0 +1,93 @@
+---
+title: "MIS530Module8"
+author: "Taylor Weese"
+date: "2/9/2020"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data import and sample
+```{r import}
+library(ggplot2)
+library(dplyr)
+library(Hmisc)
+library(cowplot)
+library(WVPlots)
+set.seed(123)
+Data <- read.csv("influenza.csv")
+sample_n(Data, 5)
+```
+
+## Understanding the data
+
+* **Season**: Date range of when data was being collected by the CDC 
+* **Region**: Region where data was collected
+* **County**: County where data was collected
+* **CDC.Week**: term for the CDC
+* **Week.Ending.Date**: the conclusion of data being retrieved by the CDC
+* **Disease**: identifies which influenza strand was diagnosed by the CDC *#predicted value*
+* **Count**: how many of each influenza disease was diagnosed during a season, in a region and county
+* **County.Centroid**: GPS location
+* **FIPS**: Postal Code
+
+```{r describe}
+describe(Data)
+```
+
+No missing values at this point in the dataset. 
+
+## Exploratory Data Analysis
+```{r Exploratory}
+## find the type of variable for each column
+str(Data)
+## show the first six rows for each column
+head(Data)
+## summary of statistics for each column
+summary(Data)
+##Correlations
+x <- ggplot(Data, aes(Disease, Count)) +
+  geom_jitter(color = "blue", alpha = 0.5) +
+    theme_light()
+y <- ggplot(Data, aes(Region, Count)) +
+  geom_jitter(color = "green", alpha = 0.5) +
+  theme_light()
+p <- plot_grid(x, y) 
+title <- ggdraw() + draw_label("Correlation between Count and Region / Disease", fontface='bold')
+plot_grid(title, p, ncol=1, rel_heights=c(0.1, 1))
+```
+
+## Linear Regression Model/Preparation and splitting the data
+```{r Linear}
+set.seed(2)
+train.index <- sample(c(1:dim(Data)[1]), dim(Data)[1]*0.6)  
+train.df <- Data[train.index, ]
+valid.df <- Data[-train.index, ]
+```
+# use lm() to run a linear regression of Count on all predictors in the training set
+```{r Count}
+Data.lm <- lm(Count ~ ., data = train.df)
+options(scipen = 999)
+summary(Data.lm)
+```
+# Execute scatter plot for Disease and Count with y-intercept
+```{r Disease}
+plot(Data$Disease, Data$Count)
+Data.lm2 <- lm(Data$Count ~ Data$Count)
+Data.lm2
+abline(Data.lm2, col="red")
+```
+
+# Execute scatter plot for Region and Count with y-intercept
+```{r Region}
+plot(Data$Region, Data$Count)
+Data.lm2 <- lm(Data$Count ~ Data$Region)
+Data.lm2
+abline(Data.lm2, col="red")
+```
